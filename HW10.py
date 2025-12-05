@@ -4,8 +4,6 @@ from self_py_fun.HW10Fun import *
 from sklearn.linear_model import LogisticRegression as LR
 from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-
-
 # In HW7, you have the chance to visualize a truncated EEG dataset stratified by
 # target and non-target stimulus type.
 #
@@ -26,7 +24,7 @@ bp_low = 0.5
 bp_upp = 6
 electrode_num = 16
 # Change the following directory to your own one.
-parent_dir = '/Users/tma33/Library/CloudStorage/OneDrive-EmoryUniversity/Emory/Rollins SPH/2025/BIOS-584/python_proj'
+parent_dir = '/Users/Tej/Documents/GitHub/BIOS-584'
 parent_data_dir = '{}/data'.format(parent_dir)
 time_index = np.linspace(0, 800, 25)
 electrode_name_ls = ['F3', 'Fz', 'F4', 'T7', 'C3', 'Cz', 'C4', 'T8', 'CP3', 'CP4', 'P3', 'Pz', 'P4', 'PO7', 'PO8', 'Oz']
@@ -45,13 +43,12 @@ trn_data_name = '{}_001_BCI_TRN_Truncated_Data_{}_{}'.format(subject_name, bp_lo
 trn_data_dir = '{}/{}.mat'.format(parent_data_dir, trn_data_name)
 eeg_trn_obj = sio.loadmat(trn_data_dir)
 
-# eeg_trn_obj is a dictionary!
 print(eeg_trn_obj.keys())
 eeg_trn_signal = eeg_trn_obj['Signal']
-print(eeg_trn_signal.shape) # 3420, 400
+print(eeg_trn_signal.shape)
 eeg_trn_type = eeg_trn_obj['Type']
-print(eeg_trn_type.shape) # 3420, 1
-eeg_trn_type = np.squeeze(eeg_trn_type, axis=1)
+eeg_trn_type = np.squeeze(eeg_trn_type)
+print(eeg_trn_type.shape)
 
 # Step 1.2: FRT dataset
 # The following code should be completed by students themselves.
@@ -59,8 +56,18 @@ eeg_trn_type = np.squeeze(eeg_trn_type, axis=1)
 # eeg_frt_signal and eeg_frt_type
 # Write your own code below:
 
+frt_data_name = '{}_001_BCI_FRT_Truncated_Data_{}_{}'.format(subject_name, bp_low, bp_upp)
+frt_data_dir = '{}/{}.mat'.format(parent_data_dir, frt_data_name)
 
+eeg_frt_obj = sio.loadmat(frt_data_dir)
 
+print(eeg_frt_obj.keys())
+eeg_frt_signal = eeg_frt_obj['Signal']
+print(eeg_frt_signal.shape)
+
+eeg_frt_type = eeg_frt_obj['Type']
+eeg_frt_type = np.squeeze(eeg_frt_type)
+print(eeg_frt_type.shape)
 
 # You have completed the exploratory data analysis in HW7 and HW8.
 # The dataset has been carefully reviewed by Dr. Jane E. Huggins,
@@ -75,8 +82,18 @@ eeg_trn_type = np.squeeze(eeg_trn_type, axis=1)
 # except for LogisticRegression: set max_iter=1000
 # Write your own code below:
 
+X_trn = eeg_trn_signal
+y_trn = eeg_trn_type
 
+#Logistic Regression
+log_reg_clf = LR(max_iter=5000)
+log_reg_clf.fit(X_trn, y_trn)
+#Linear Discriminant Analysis
+lda_clf = LDA()
+lda_clf.fit(X_trn, y_trn)
 
+svm_clf = SVC(probability=True)
+svm_clf.fit(X_trn, y_trn)
 
 
 # Step 3: Evaluate model performance on both TRN and FRT files
@@ -87,23 +104,32 @@ eeg_trn_type = np.squeeze(eeg_trn_type, axis=1)
 # denoted as logistic_y_trn, lda_y_trn, and svm_y_trn.
 # Write your own code below:
 
+X_trn = eeg_trn_signal
 
+logistic_y_trn = log_reg_clf.predict_proba(X_trn)[:, 1:2]
+lda_y_trn      = lda_clf.predict_proba(X_trn)[:, 1:2]
+svm_y_trn      = svm_clf.predict_proba(X_trn)[:, 1:2]
 
-
+print(logistic_y_trn.shape, lda_y_trn.shape, svm_y_trn.shape)
 
 # Step 3.2: Prediction accuracy on FRT files
 # Similarly, you are asked to generate stimulus-level probability for each method on FRT files,
 # denoted as logistic_y_frt, lda_y_frt, and svm_y_frt.
 # Write your own code below:
 
+X_frt = eeg_frt_signal
 
+logistic_y_frt = log_reg_clf.predict_proba(X_frt)[:, 1:2]
+lda_y_frt      = lda_clf.predict_proba(X_frt)[:, 1:2]
+svm_y_frt      = svm_clf.predict_proba(X_frt)[:, 1:2]
 
+print(logistic_y_frt.shape, lda_y_frt.shape, svm_y_frt.shape)
 
 
 # Step 4: Convert binary classification probability to character-level accuracy
 # This involves advanced data manipulation, so you do not need to write any new code.
 # Please run the following code to view the final results.
-'''
+# Make Type arrays 2D again for streamline_predict
 eeg_trn_code = eeg_trn_obj['Code']
 eeg_frt_code = eeg_frt_obj['Code']
 char_frt = convert_raw_char_to_alphanumeric_stype(eeg_frt_obj['Text'])
@@ -176,7 +202,7 @@ print(svm_trn_accuracy)
 print(logistic_frt_accuracy)
 print(lda_frt_accuracy)
 print(svm_frt_accuracy)
-'''
+
 
 # Remember to answer two questions below:
 
@@ -190,5 +216,18 @@ print(svm_frt_accuracy)
 # svm_trn_accuracy = np.mean(svm_letter_mat_trn == np.array(list(char_trn))[:, np.newaxis], axis=0)
 # svm_frt_accuracy = np.mean(svm_letter_mat_frt == np.array(list(char_frt))[:, np.newaxis], axis=0)
 
+''' 
+The aforementioned lines of code checks how the model is working by comparing whether the prediction is accurate to
+the real value. In our case it is the letter values. We get the percentage of correct predictions and it repeates
+for 1, 2, 3, and 4 repetitions, so we can see how accuracy improves as we use more EEG data
+'''
+
+
 # Step 5: Summary
 # Which method performs the best? Why?
+'''
+The Support Vector Machine (SVM) method performed better compared to LDN and Logisitic Regression. Out of the 4 repetitions,
+although all three methods were getting increasing percent of letter correct, SVM was the only method to 
+reach a percentage of 100% at the 4th repetition. Thus, it reaches the best accuracy the fastest and is better than the
+other models. SVM is better at identifying the difference between target and non-target when signals are complicated. 
+'''
